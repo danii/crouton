@@ -1,25 +1,51 @@
 use colorful::{Color, Colorful};
-use std::{env, io, process::Command};
+use std::time::{Duration, SystemTime};
+use std::{
+    env,
+    io::{self, Write},
+    process::Command,
+};
 
 fn main() {
     println!("{esc}{esc}[2J{esc}[1;1H", esc = 27 as char);
 
     fn generate_status_string(status: bool) -> colorful::core::color_string::CString {
         match status {
-            true => "Good".color(Color::Green3b),
-            false => "Bad".color(Color::Red3a),
+            true => "Good".color(Color::Green1).bold(),
+            false => "Bad".color(Color::Red3a).bold(),
+        }
+    }
+
+    fn determine_time(duration: Duration) -> String {
+        if duration.as_millis() == 0 {
+            "".to_string()
+        } else {
+            let time = duration.as_millis() as f64;
+
+            if time > 100.0 {
+                format!("[Time: {}ms]", time.ceil().to_string().color(Color::Red3a))
+            } else {
+                format!(
+                    "[Time: {}ms]",
+                    time.ceil().to_string().color(Color::Purple1b)
+                )
+            }
         }
     }
 
     let mut global_dir = env::current_dir().unwrap();
+    let mut time = SystemTime::now();
     let mut dir_string = global_dir.to_str().unwrap();
     let mut status = true;
 
-    println!(
-        "[Working Dir: {}] [Status: {}]",
+    print!(
+        "[Working Dir: {}] [Status: {}] {}\n~> ",
         dir_string.color(Color::Purple1b),
-        generate_status_string(status)
+        generate_status_string(status),
+        determine_time(time.elapsed().unwrap())
     );
+
+    std::io::stdout().flush().unwrap();
 
     loop {
         let mut command_data = String::new();
@@ -37,16 +63,19 @@ fn main() {
                     return;
                 }
                 "clear" => {
+                    time = SystemTime::now();
                     println!("{esc}{esc}[2J{esc}[1;1H", esc = 27 as char);
                     status = true;
                 }
                 "cls" => {
+                    time = SystemTime::now();
                     println!("{esc}{esc}[2J{esc}[1;1H", esc = 27 as char);
                     status = true;
                 }
                 "cd" => match split_command.get(1) {
                     Some(dir) => match env::set_current_dir(dir) {
                         Ok(_) => {
+                            time = SystemTime::now();
                             global_dir = env::current_dir().unwrap();
                             dir_string = global_dir.to_str().unwrap();
                             status = true;
@@ -63,8 +92,8 @@ fn main() {
                 _ => match command.to_lowercase().as_str() {
                     "cargo" => match Command::new(command).args(&split_command[1..]).spawn() {
                         Ok(mut output) => {
+                            time = SystemTime::now();
                             output.wait().unwrap();
-
                             status = true;
                         }
                         Err(err) => {
@@ -88,10 +117,13 @@ fn main() {
             }
         }
 
-        println!(
-            "[Working Dir: {}] [Status: {}]",
+        print!(
+            "[Working Dir: {}] [Status: {}] {}\n~> ",
             dir_string.color(Color::Purple1b),
-            generate_status_string(status)
+            generate_status_string(status),
+            determine_time(time.elapsed().unwrap())
         );
+
+        std::io::stdout().flush().unwrap();
     }
 }
