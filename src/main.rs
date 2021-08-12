@@ -64,12 +64,12 @@ fn main() {
                 }
                 "clear" => {
                     time = SystemTime::now();
-                    println!("{esc}{esc}[2J{esc}[1;1H", esc = 27 as char);
+                    clearscreen::clear().unwrap();
                     status = true;
                 }
                 "cls" => {
                     time = SystemTime::now();
-                    println!("{esc}{esc}[2J{esc}[1;1H", esc = 27 as char);
+                    clearscreen::clear().unwrap();
                     status = true;
                 }
                 "cd" => match split_command.get(1) {
