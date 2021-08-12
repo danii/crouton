@@ -39,18 +39,23 @@ fn main() {
         }
     }
 
-    fn get_head_branch(branches: git2::Branches) -> &str {
+    fn get_head_branch(branches: git2::Branches) -> String {
 
+        let mut return_name: String = String::from("None"); 
         for branch in branches {
 
             let actual_branch = branch.unwrap();
+            let branch_name = actual_branch.0.name().unwrap();
+            
+            match branch_name {
+                Some(name) => {
+                    return_name = name.to_string();
+                },
+                None => return_name = String::from("None")
+            };
+        };
 
-            if actual_branch.0.is_head() {
-                return actual_branch.0.name().unwrap().unwrap();
-                
-            }
-
-        }
+        return return_name
 
     } 
 
@@ -60,10 +65,18 @@ fn main() {
     let mut dir_string = global_dir.to_str().unwrap();
     let mut status = true;
 
+    let repo = match Repository::open(global_dir.clone()) {
+        Ok(repo) => repo,
+        Err(e) => panic!("{}", e),
+    };
+    
+    let branches = repo.branches(None).unwrap();
+
     print!(
-        "[Working Dir: {}] [Status: {}] {}\n~> ",
+        "[Working Dir: {}] [Status: {}] [Branch: {}] {}\n~> ",
         dir_string.color(Color::Purple1b),
         generate_status_string(status),
+        get_head_branch(branches).color(Color::Purple1b),
         determine_time(time.elapsed().unwrap())
     );
 
@@ -74,10 +87,18 @@ fn main() {
         io::stdin().read_line(&mut command_data).unwrap();
 
         let split_command = command_data.split(' ').collect::<Vec<&str>>();
+
+        #[cfg(target_os="windows")]        
         let split_command = split_command
             .iter()
             .map(|e| e.strip_suffix("\r\n").unwrap_or(e))
             .collect::<Vec<&str>>();
+            
+        #[cfg(target_os="linux")]
+        let split_command = split_command
+        .iter()
+        .map(|e| e.strip_suffix("\n").unwrap_or(e))
+        .collect::<Vec<&str>>();
 
         match split_command.get(0) {
             Some(command) => match command.to_lowercase().as_str() {
@@ -100,14 +121,6 @@ fn main() {
                             time = SystemTime::now();
                             global_dir = env::current_dir().unwrap();
                             dir_string = global_dir.to_str().unwrap();
-
-                            let repo = match Repository::open(global_dir.clone()) {
-                                Ok(repo) => repo,
-                                Err(e) => panic!("{}", e),
-                            };
-
-                            let branch = repo.branches(None).unwrap().nth(0).unwrap().unwrap();
-                            println!("{}", branch.0.name().unwrap().unwrap());
                             status = true;
                         }
                         Err(_) => {
@@ -147,10 +160,12 @@ fn main() {
             }
         }
 
+        let branches = repo.branches(None).unwrap();
         print!(
-            "[Working Dir: {}] [Status: {}] {}\n~> ",
+            "[Working Dir: {}] [Status: {}] [Branch: {}] {}\n~> ",
             dir_string.color(Color::Purple1b),
             generate_status_string(status),
+            get_head_branch(branches).color(Color::Purple1b),
             determine_time(time.elapsed().unwrap())
         );
     
