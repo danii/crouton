@@ -1,4 +1,4 @@
-use std::{env, io, path::Path};
+use std::{env, io, path::Path,process::Command};
 use colorful::{Color, Colorful};
 
 fn main() {
@@ -18,8 +18,8 @@ fn main() {
 
     }
 
-    let dir = env::current_dir().unwrap();
-    let dir_string = dir.to_str().unwrap();
+    let mut global_dir = env::current_dir().unwrap();
+    let mut dir_string = global_dir.to_str().unwrap();
     let mut status = true;
 
     println!("[Working Dir: {}] [Status: {}]", dir_string.color(Color::Purple1b), generate_status_string(status));
@@ -52,8 +52,16 @@ fn main() {
                         match split_command.iter().nth(1) {
                             Some(dir) => {
 
-                                env::set_current_dir(Path::new(dir)).unwrap();
-                                status = true; 
+                                match env::set_current_dir(dir) {
+                                    Ok(_) => {
+                                        global_dir = env::current_dir().unwrap();
+                                        dir_string = global_dir.to_str().unwrap();
+                                        status = true; 
+                                    },
+                                    Err(_) => {
+                                        status = false; 
+                                    },
+                                }
 
                             },
                             None => {
@@ -64,8 +72,27 @@ fn main() {
 
                     }
                     _ => {
-                        println!("Unkown command... {cmd}", cmd = command);
-                        status = false;
+
+                        match command.to_lowercase().as_str() {
+                            "cargo" => {
+                                match Command::new(command_data.trim()).spawn() {
+                                    Ok(mut output) => {
+
+                                        output.wait().unwrap();
+
+                                        status = true;
+                                    },
+                                    Err(err) => {
+                                        println!("{err:?}", err=err);
+                                        status = false;
+                                    },
+                                }
+                            }   
+                            _ => {
+                                println!("Unknwon...");
+                                status = false;
+                            }
+                        }
                     }
                 }
 
