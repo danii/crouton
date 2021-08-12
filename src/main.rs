@@ -75,7 +75,7 @@ fn main() {
 
                         match command.to_lowercase().as_str() {
                             "cargo" => {
-                                match Command::new(command_data.trim()).spawn() {
+                                match Command::new(command).args(&split_command[1..]).spawn() {
                                     Ok(mut output) => {
 
                                         output.wait().unwrap();
