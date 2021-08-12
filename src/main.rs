@@ -1,13 +1,19 @@
 use colorful::{Color, Colorful};
+use std::fs::OpenOptions;
+use std::io::Read;
+use std::path::Path;
+use std::ptr::read;
+use git2::Repository;
 use std::time::{Duration, SystemTime};
 use std::{
+    fs:: {read_dir},
     env,
     io::{self, Write},
     process::Command,
 };
 
 fn main() {
-    println!("{esc}{esc}[2J{esc}[1;1H", esc = 27 as char);
+    clearscreen::clear().unwrap();
 
     fn generate_status_string(status: bool) -> colorful::core::color_string::CString {
         match status {
@@ -32,6 +38,22 @@ fn main() {
             }
         }
     }
+
+    fn get_head_branch(branches: git2::Branches) -> &str {
+
+        for branch in branches {
+
+            let actual_branch = branch.unwrap();
+
+            if actual_branch.0.is_head() {
+                return actual_branch.0.name().unwrap().unwrap();
+                
+            }
+
+        }
+
+    } 
+
 
     let mut global_dir = env::current_dir().unwrap();
     let mut time = SystemTime::now();
@@ -78,6 +100,14 @@ fn main() {
                             time = SystemTime::now();
                             global_dir = env::current_dir().unwrap();
                             dir_string = global_dir.to_str().unwrap();
+
+                            let repo = match Repository::open(global_dir.clone()) {
+                                Ok(repo) => repo,
+                                Err(e) => panic!("{}", e),
+                            };
+
+                            let branch = repo.branches(None).unwrap().nth(0).unwrap().unwrap();
+                            println!("{}", branch.0.name().unwrap().unwrap());
                             status = true;
                         }
                         Err(_) => {
@@ -123,6 +153,7 @@ fn main() {
             generate_status_string(status),
             determine_time(time.elapsed().unwrap())
         );
+    
 
         std::io::stdout().flush().unwrap();
     }
