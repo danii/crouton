@@ -163,10 +163,10 @@ impl Crouton {
                         },
                         None => {
                             #[cfg(target_os = "windows")]
-                            let root_path = {
+                            let root_path: &str = {
                                 match std::env::var("SystemDrive") {
                                     Ok(path) => {
-                                        return format!("{}", path);
+                                        return format!("{}", path).as_str();
                                     }
                                     Err(_) => self.status = false,
                                 }
