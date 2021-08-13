@@ -160,6 +160,39 @@ fn main() {
                             println!("{err:?}", err = err);
                             status = false;
                         }                        
+                    },
+                    "rm" => match Command::new(command).args(&split_command[1..]).spawn() {
+                        Ok(mut output) => {
+                            time = SystemTime::now();
+                            output.wait().unwrap();
+                            status = true;
+                        }
+                        Err(err) => {
+                            println!("{err:?}", err = err);
+                            status = false;
+                        }                        
+                    },
+                    "ls" => match Command::new(command).args(&split_command[1..]).spawn() {
+                        Ok(mut output) => {
+                            time = SystemTime::now();
+                            output.wait().unwrap();
+                            status = true;
+                        }
+                        Err(err) => {
+                            println!("{err:?}", err = err);
+                            status = false;
+                        }                        
+                    },
+                    "sudo" => match Command::new(command).args(&split_command[1..]).spawn() {
+                        Ok(mut output) => {
+                            time = SystemTime::now();
+                            output.wait().unwrap();
+                            status = true;
+                        }
+                        Err(err) => {
+                            println!("{err:?}", err = err);
+                            status = false;
+                        }                        
                     }
                     _ => {
                         println!("Unknwon...");
