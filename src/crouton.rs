@@ -63,7 +63,7 @@ impl Crouton {
             #[cfg(target_os = "linux")]
             let split_command = split_command
                 .iter()
-                .map(|e| e.strip_suffix("\n").unwrap_or(e))
+                .map(|e| e.strip_suffix('\n').unwrap_or(e))
                 .collect::<Vec<&str>>();
 
             match split_command.get(0) {
