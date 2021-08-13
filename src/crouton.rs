@@ -197,8 +197,8 @@ impl Crouton {
                             println!("{err:?}", err = err);
                             self.status = false;
                         }
-                    }
-                }
+                    },
+                },
                 None => {
                     self.status = false;
                 }
