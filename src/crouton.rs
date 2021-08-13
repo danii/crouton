@@ -60,7 +60,7 @@ impl Crouton {
     fn display_branch(&self) -> String {
         match &self.current_head_branch {
             Some(branch) => format!(
-                " [Branch: {branch}]",
+                " [Branch: {branch}] ",
                 branch = branch.to_string().color(Color::MediumPurple3a).bold()
             ),
             None => String::from(""),
@@ -102,7 +102,7 @@ impl Crouton {
                 .current_dir
                 .to_str()
                 .unwrap_or("\"Failed to get dir\"")
-                .color(Color::MediumPurple3a)
+                .color(Color::MediumOrchid3)
                 .bold(),
             status = self.determine_status(self.status),
             branch = self.display_branch(),
@@ -144,6 +144,9 @@ impl Crouton {
 
             match split_command.get(0) {
                 Some(command) => match command.to_lowercase().as_str() {
+                    "exit" => {
+                        return;
+                    }
                     "cd" => match split_command.get(1) {
                         Some(dir) => match env::set_current_dir(dir) {
                             Ok(_) => {

@@ -1,6 +1,7 @@
 mod crouton;
 
 use crouton::Crouton;
+
 fn main() {
     clearscreen::clear().unwrap();
 
