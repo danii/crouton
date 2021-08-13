@@ -168,7 +168,7 @@ impl Crouton {
                                     Ok(path) => {
                                         return format!("{}", path);
                                     }
-                                    Err(_) => status = false,
+                                    Err(_) => self.status = false,
                                 }
                             };
 
