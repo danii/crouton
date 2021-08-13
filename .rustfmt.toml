@@ -1,0 +1,6 @@
+# indent_style = "Block"
+# reorder_imports = true
+# brace_style = "AlwaysNextLine"
+# wrap_comments = true
+# control_brace_style = "AlwaysNextLine"
+fn_args_layout = "Compressed"
