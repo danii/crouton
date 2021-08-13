@@ -14,7 +14,7 @@ pub struct Crouton {
     pub current_dir: PathBuf,
     pub status: bool,
     pub current_repo: Option<Repository>,
-    pub current_head_branch: Option<&'static str>,
+    pub current_head_branch: Option<String>,
     pub currnent_time: SystemTime,
 }
 
@@ -33,34 +33,26 @@ impl Crouton {
     }
 
     fn get_current_repo(&self) -> Option<Repository> {
-        match env::current_dir() {
-            Ok(path) => match Repository::open(path) {
-                Ok(repo) => Some(repo),
-                Err(_) => None,
-            },
+        match Repository::open(self.current_dir.to_str().unwrap()) {
+            Ok(repo) => Some(repo),
             Err(_) => None,
         }
     }
 
-    fn get_current_branch(&self) -> Option<&'static str> {
-        match &self.current_repo {
-            Some(repo) => match repo.branches(None) {
-                Ok(branches) => {
-                    for branch in branches {
-                        match branch {
-                            Ok(branch) => {
-                                if branch.0.is_head() {
-                                    branch.0.name().ok()?;
-                                }
-                            }
-                            Err(_) => continue,
-                        }
-                    }
-
-                    None
-                }
+    fn get_current_branch(&self) -> Option<String> {
+        let head = match &self.current_repo {
+            Some(repo) => match repo.head() {
+                Ok(referance) => Some(referance),
                 Err(_) => None,
             },
+            None => None,
+        };
+
+        match head {
+            Some(head) => {
+                let shorthand = head.shorthand();
+                shorthand.map(std::string::ToString::to_string)
+            }
             None => None,
         }
     }
@@ -68,7 +60,7 @@ impl Crouton {
     fn display_branch(&self) -> String {
         match &self.current_head_branch {
             Some(branch) => format!(
-                " [Branch: {branch} ",
+                " [Branch: {branch}]",
                 branch = branch.to_string().color(Color::MediumPurple3a).bold()
             ),
             None => String::from(""),
