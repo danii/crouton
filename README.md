@@ -2,4 +2,4 @@
 
 Work in progres... check back later :)
 > ### **Note**
-> I do not recommend using this as your default terminal shell...
+> I do not recommend using this as your default terminal shell..
