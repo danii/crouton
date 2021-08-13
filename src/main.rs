@@ -3,7 +3,7 @@ use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::Path;
 use std::ptr::read;
-use git2::Repository;
+
 use std::time::{Duration, SystemTime};
 use std::{
     fs:: {read_dir},
@@ -29,35 +29,15 @@ fn main() {
             let time = duration.as_millis() as f64;
 
             if time > 100.0 {
-                format!("[Time: {}ms]", time.ceil().to_string().color(Color::Red3a))
+                format!("[Time: {}ms]", time.ceil().to_string().color(Color::Red3a).bold())
             } else {
                 format!(
                     "[Time: {}ms]",
-                    time.ceil().to_string().color(Color::Purple1b)
+                    time.ceil().to_string().color(Color::Purple1b).bold()
                 )
             }
         }
     }
-
-    fn get_head_branch(branches: git2::Branches) -> String {
-
-        let mut return_name: String = String::from("None"); 
-        for branch in branches {
-
-            let actual_branch = branch.unwrap();
-            let branch_name = actual_branch.0.name().unwrap();
-            
-            match branch_name {
-                Some(name) => {
-                    return_name = name.to_string();
-                },
-                None => return_name = String::from("None")
-            };
-        };
-
-        return return_name
-
-    } 
 
 
     let mut global_dir = env::current_dir().unwrap();
@@ -65,19 +45,12 @@ fn main() {
     let mut dir_string = global_dir.to_str().unwrap();
     let mut status = true;
 
-    let repo = match Repository::open(global_dir.clone()) {
-        Ok(repo) => repo,
-        Err(e) => panic!("{}", e),
-    };
-    
-    let branches = repo.branches(None).unwrap();
-
+    // [Branch: {}]
     print!(
-        "[Working Dir: {}] [Status: {}] [Branch: {}] {}\n~> ",
-        dir_string.color(Color::Purple1b),
+        "[Working Dir: {}] [Status: {}] {}\n~> ",
+        dir_string.color(Color::Purple1b).bold(),
         generate_status_string(status),
-        get_head_branch(branches).color(Color::Purple1b),
-        determine_time(time.elapsed().unwrap())
+        determine_time(time.elapsed().unwrap()),
     );
 
     std::io::stdout().flush().unwrap();
@@ -93,7 +66,7 @@ fn main() {
             .iter()
             .map(|e| e.strip_suffix("\r\n").unwrap_or(e))
             .collect::<Vec<&str>>();
-            
+
         #[cfg(target_os="linux")]
         let split_command = split_command
         .iter()
@@ -128,8 +101,30 @@ fn main() {
                         }
                     },
                     None => {
-                        println!("Couldn't get the directory to cd into...");
-                        status = false;
+                        #[cfg(target_os = "windows")]
+                        let root_path = {
+                            match std::env::var("SystemDrive") {
+                                Ok(path) => {
+                                    return format!("{}", path);
+                                }
+                                Err(_) => status = false,
+                            }
+                        };
+                    
+                        #[cfg(target_os = "linux")]
+                        let root_path = "/";
+
+                        match env::set_current_dir(root_path) {
+                            Ok(_) => {
+                                time = SystemTime::now();
+                                global_dir = env::current_dir().unwrap();
+                                dir_string = global_dir.to_str().unwrap();
+                                status = true;
+                            }
+                            Err(_) => {
+                                status = false;
+                            }
+                        }
                     }
                 },
                 _ => match command.to_lowercase().as_str() {
@@ -144,6 +139,28 @@ fn main() {
                             status = false;
                         }
                     },
+                    "git" => match Command::new(command).args(&split_command[1..]).spawn() {
+                        Ok(mut output) => {
+                            time = SystemTime::now();
+                            output.wait().unwrap();
+                            status = true;
+                        }
+                        Err(err) => {
+                            println!("{err:?}", err = err);
+                            status = false;
+                        }                        
+                    },
+                    "mkdir" => match Command::new(command).args(&split_command[1..]).spawn() {
+                        Ok(mut output) => {
+                            time = SystemTime::now();
+                            output.wait().unwrap();
+                            status = true;
+                        }
+                        Err(err) => {
+                            println!("{err:?}", err = err);
+                            status = false;
+                        }                        
+                    }
                     _ => {
                         println!("Unknwon...");
                         status = false;
@@ -160,12 +177,10 @@ fn main() {
             }
         }
 
-        let branches = repo.branches(None).unwrap();
         print!(
-            "[Working Dir: {}] [Status: {}] [Branch: {}] {}\n~> ",
-            dir_string.color(Color::Purple1b),
+            "[Working Dir: {}] [Status: {}] {}\n~> ",
+            dir_string.color(Color::Purple1b).bold(),
             generate_status_string(status),
-            get_head_branch(branches).color(Color::Purple1b),
             determine_time(time.elapsed().unwrap())
         );
     
