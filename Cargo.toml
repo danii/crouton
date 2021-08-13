@@ -10,3 +10,4 @@ edition = "2018"
 colorful = "0.2.1"
 clearscreen = "1.0.6"
 clap = "2.33.0"
+git2 = { version = "0.13.20", default-features = false }
