@@ -70,8 +70,7 @@ impl Crouton {
             Some(branch) => format!(
                 " [Branch: {branch} ",
                 branch = branch.to_string().color(Color::MediumPurple3a).bold()
-            )
-            .to_string(),
+            ),
             None => String::from(""),
         }
     }
