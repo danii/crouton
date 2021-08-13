@@ -24,7 +24,7 @@ impl Crouton {
 
         Crouton {
             header_string,
-            current_dir: path.clone(),
+            current_dir: path,
             status: true,
             current_repo: None,
             current_head_branch: None,
@@ -72,12 +72,15 @@ impl Crouton {
                 branch = branch.to_string().color(Color::MediumPurple3a).bold()
             )
             .to_string(),
-            None => "".to_string(),
+            None => String::from(""),
         }
     }
 
     fn display_time(&self) -> String {
-        let duration = self.currnent_time.elapsed().unwrap_or(Duration::new(1, 1));
+        let duration = self
+            .currnent_time
+            .elapsed()
+            .unwrap_or_else(|_| Duration::new(1, 1));
 
         if duration.as_millis() == 0 {
             "".to_string()
