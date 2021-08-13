@@ -143,17 +143,62 @@ impl Crouton {
                 .collect::<Vec<&str>>();
 
             match split_command.get(0) {
-                Some(command) => match Command::new(command).args(&split_command[1..]).spawn() {
-                    Ok(mut output) => {
-                        self.currnent_time = SystemTime::now();
-                        output.wait().unwrap();
-                        self.status = true;
+                Some(command) => match command.to_lowercase().as_str() {
+                    "cd" => match split_command.get(1) {
+                        Some(dir) => match env::set_current_dir(dir) {
+                            Ok(_) => {
+                                self.currnent_time = SystemTime::now();
+                                self.current_dir = env::current_dir().unwrap();
+                                self.current_repo = self.get_current_repo();
+                                self.current_head_branch = self.get_current_branch();
+
+                                self.status = true;
+                            }
+                            Err(_) => {
+                                self.status = false;
+                            }
+                        },
+                        None => {
+                            #[cfg(target_os = "windows")]
+                            let root_path = {
+                                match std::env::var("SystemDrive") {
+                                    Ok(path) => {
+                                        return format!("{}", path);
+                                    }
+                                    Err(_) => status = false,
+                                }
+                            };
+
+                            #[cfg(target_os = "linux")]
+                            let root_path = "/";
+
+                            match env::set_current_dir(root_path) {
+                                Ok(_) => {
+                                    self.currnent_time = SystemTime::now();
+                                    self.current_dir = env::current_dir().unwrap();
+                                    self.current_repo = self.get_current_repo();
+                                    self.current_head_branch = self.get_current_branch();
+
+                                    self.status = true;
+                                }
+                                Err(_) => {
+                                    self.status = false;
+                                }
+                            }
+                        }
+                    },
+                    _ => match Command::new(command).args(&split_command[1..]).spawn() {
+                        Ok(mut output) => {
+                            self.currnent_time = SystemTime::now();
+                            output.wait().unwrap();
+                            self.status = true;
+                        }
+                        Err(err) => {
+                            println!("{err:?}", err = err);
+                            self.status = false;
+                        }
                     }
-                    Err(err) => {
-                        println!("{err:?}", err = err);
-                        self.status = false;
-                    }
-                },
+                }
                 None => {
                     self.status = false;
                 }
