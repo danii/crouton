@@ -208,10 +208,8 @@ impl Crouton {
                         None => {
                             #[cfg(target_os = "windows")]
                             let root_path = match std::env::var("SystemDrive") {
-                                    Ok(path) => {
-                                        format!("{}", path).as_str()
-                                    }
-                                    Err(_) => "C:\\",
+                                Ok(path) => format!("{}", path).as_str(),
+                                Err(_) => "C:\\",
                             };
 
                             #[cfg(target_os = "linux")]
