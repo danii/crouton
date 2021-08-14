@@ -1,7 +1,13 @@
 //use std::{env, fs:: {read_dir}, io::{self, Read, Write}, path::{Path, PathBuf}, process::Command, time::{Duration, SystemTime}};
 use colorful::{Color, Colorful};
 use git2::Repository;
-use std::{env, io::{self, Write}, path::{self, PathBuf}, process::Command, time::{Duration, SystemTime}};
+use std::{
+    env,
+    io::{self, Write},
+    path::PathBuf,
+    process::Command,
+    time::{Duration, SystemTime},
+};
 
 pub struct Crouton {
     pub header_string: &'static str,
@@ -202,7 +208,7 @@ impl Crouton {
                         None => {
                             #[cfg(target_os = "windows")]
                             let root_path = match std::env::var("SystemDrive") {
-                                Ok(path) => path.as_str(),
+                                Ok(env_path) => env_path.as_str(),
                                 Err(_) => "C:\\",
                             };
 
