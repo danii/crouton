@@ -16,6 +16,7 @@ pub struct Crouton {
     pub current_repo: Option<Repository>,
     pub current_head_branch: Option<String>,
     pub currnent_time: SystemTime,
+    pub cmd_history: Vec<String>
 }
 
 impl Crouton {
@@ -29,6 +30,7 @@ impl Crouton {
             current_repo: None,
             current_head_branch: None,
             currnent_time: SystemTime::now(),
+            cmd_history: vec![]
         }
     }
 
@@ -147,6 +149,51 @@ impl Crouton {
                     "exit" => {
                         return;
                     }
+                    "crouton_history" => {
+
+                        match split_command.get(1) {
+                            Some(sub_cmd) => {
+
+                                match sub_cmd.to_lowercase().as_str() {
+                                    "use" => {
+                                        let default_cmd = &String::from("crouton_history");
+                                        let mut command = self.cmd_history.get(0).unwrap_or(default_cmd);
+
+                                        match split_command.get(2) {
+                                            Some(cmd) => {
+                                                command = match self.cmd_history.iter().nth(cmd.parse::<usize>().unwrap_or(0)) {
+                                                    Some(cmd) => cmd,
+                                                    None => command,
+                                                }
+                                            },
+                                            None => {},
+                                        }
+
+                                        match Command::new(command).args(&split_command[3..]).spawn() {
+                                            Ok(mut output) => {
+                                                self.currnent_time = SystemTime::now();
+                                                output.wait().unwrap();
+                                                self.status = true;
+                                            }
+                                            Err(err) => {
+                                                println!("{err:?}", err = err);
+                                                self.status = false;
+                                            }
+                                        }
+                                    }
+                                    _ => {
+                                        println!("unknown subcommand for crouton_history.");
+                                        self.status = false;
+                                    }
+                                }
+
+                            },
+                            None => {
+                                println!("History: {:?}", self.cmd_history);
+                                self.status = true;
+                            },
+                        }
+                    }
                     "cd" => match split_command.get(1) {
                         Some(dir) => match env::set_current_dir(dir) {
                             Ok(_) => {
@@ -156,6 +203,7 @@ impl Crouton {
                                 self.current_head_branch = self.get_current_branch();
 
                                 self.status = true;
+                                self.cmd_history.push("cd".to_string());
                             }
                             Err(_) => {
                                 self.status = false;
@@ -183,6 +231,7 @@ impl Crouton {
                                     self.current_head_branch = self.get_current_branch();
 
                                     self.status = true;
+                                    self.cmd_history.push("cd".to_string());
                                 }
                                 Err(_) => {
                                     self.status = false;
@@ -194,10 +243,12 @@ impl Crouton {
                         Ok(mut output) => {
                             self.currnent_time = SystemTime::now();
                             output.wait().unwrap();
+                            self.cmd_history.push(command.to_string());
                             self.status = true;
                         }
                         Err(err) => {
                             println!("{err:?}", err = err);
+                            self.cmd_history.push(command.to_string());
                             self.status = false;
                         }
                     },
