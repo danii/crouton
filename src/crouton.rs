@@ -212,7 +212,7 @@ impl Crouton {
                                     Ok(path) => {
                                         return format!("{}", path).as_str();
                                     }
-                                    Err(_) => "C:\\".as_str(),
+                                    Err(_) => "C:\\",
                                 }
                             };
 
