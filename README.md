@@ -1,5 +1,4 @@
 <h1 align="center">Crouton</h1>
 
-Work in progres... check back later :)
-> ### **Note**
-> I do not recommend using this as your default terminal shell..
+| 📌 |  Crouton is still a work in progress, so if you use it be mindful that there might be bugs. Beyond this, it should be pretty useable.
+| -- | - 
