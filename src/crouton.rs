@@ -16,7 +16,7 @@ pub struct Crouton {
     pub current_repo: Option<Repository>,
     pub current_head_branch: Option<String>,
     pub currnent_time: SystemTime,
-    pub cmd_history: Vec<String>
+    pub cmd_history: Vec<String>,
 }
 
 impl Crouton {
@@ -30,7 +30,7 @@ impl Crouton {
             current_repo: None,
             current_head_branch: None,
             currnent_time: SystemTime::now(),
-            cmd_history: vec![]
+            cmd_history: vec![],
         }
     }
 
@@ -149,52 +149,48 @@ impl Crouton {
                     "exit" => {
                         return;
                     }
-                    "crouton_history" => {
+                    "crouton_history" => match split_command.get(1) {
+                        Some(sub_cmd) => match sub_cmd.to_lowercase().as_str() {
+                            "use" => {
+                                let default_cmd = &String::from("crouton_history");
+                                let mut command = self.cmd_history.get(0).unwrap_or(default_cmd);
 
-                        match split_command.get(1) {
-                            Some(sub_cmd) => {
-
-                                match sub_cmd.to_lowercase().as_str() {
-                                    "use" => {
-                                        let default_cmd = &String::from("crouton_history");
-                                        let mut command = self.cmd_history.get(0).unwrap_or(default_cmd);
-
-                                        match split_command.get(2) {
-                                            Some(cmd) => {
-                                                command = match self.cmd_history.iter().nth(cmd.parse::<usize>().unwrap_or(0)) {
-                                                    Some(cmd) => cmd,
-                                                    None => command,
-                                                }
-                                            },
-                                            None => {},
-                                        }
-
-                                        match Command::new(command).args(&split_command[3..]).spawn() {
-                                            Ok(mut output) => {
-                                                self.currnent_time = SystemTime::now();
-                                                output.wait().unwrap();
-                                                self.status = true;
-                                            }
-                                            Err(err) => {
-                                                println!("{err:?}", err = err);
-                                                self.status = false;
-                                            }
-                                        }
-                                    }
-                                    _ => {
-                                        println!("unknown subcommand for crouton_history.");
-                                        self.status = false;
+                                if let Some(cmd) = split_command.get(2) {
+                                    command = match self
+                                        .cmd_history
+                                        .get(cmd.parse::<usize>().unwrap_or(0))
+                                    {
+                                        Some(cmd) => cmd,
+                                        None => command,
                                     }
                                 }
 
-                            },
-                            None => {
-                                println!("History: {:?}", self.cmd_history);
-                                self.status = true;
-                            },
+                                match Command::new(command).args(&split_command[3..]).spawn() {
+                                    Ok(mut output) => {
+                                        self.currnent_time = SystemTime::now();
+                                        output.wait().unwrap();
+                                        self.status = true;
+                                    }
+                                    Err(err) => {
+                                        println!("{err:?}", err = err);
+                                        self.status = false;
+                                    }
+                                }
+                            }
+                            _ => {
+                                println!("unknown subcommand for crouton_history.");
+                                self.status = false;
+                            }
+                        },
+                        None => {
+                            println!("History: {:?}", self.cmd_history);
+                            self.status = true;
                         }
-                    }
+                    },
                     "cd" => match split_command.get(1) {
+                        // Handling the CD command our selves in needed so that I can
+                        // set the branch if the directory is a git repo. I can't
+                        // think of any other way to do it :(
                         Some(dir) => match env::set_current_dir(dir) {
                             Ok(_) => {
                                 self.currnent_time = SystemTime::now();
@@ -216,7 +212,7 @@ impl Crouton {
                                     Ok(path) => {
                                         return format!("{}", path).as_str();
                                     }
-                                    Err(_) => self.status = false,
+                                    Err(_) => "C:\\".as_str(),
                                 }
                             };
 
@@ -243,6 +239,11 @@ impl Crouton {
                         Ok(mut output) => {
                             self.currnent_time = SystemTime::now();
                             output.wait().unwrap();
+
+                            self.current_dir = env::current_dir().unwrap();
+                            self.current_repo = self.get_current_repo();
+                            self.current_head_branch = self.get_current_branch();
+
                             self.cmd_history.push(command.to_string());
                             self.status = true;
                         }
