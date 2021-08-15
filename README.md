@@ -5,7 +5,7 @@
 
 | Status | Platform |
 | ------ | -------- |
-| ❌     | Windows  |
+| ✅     | Windows  |
 | ✅     | linux 
 
 ## History
