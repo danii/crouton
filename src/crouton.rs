@@ -208,12 +208,12 @@ impl Crouton {
                         None => {
                             #[cfg(target_os = "windows")]
                             let root_path = match std::env::var("SystemDrive") {
-                                Ok(env_path) => env_path.as_str(),
-                                Err(_) => "C:\\",
+                                Ok(env_path) => env_path,
+                                Err(_) => "C:\\".to_string(),
                             };
 
                             #[cfg(target_os = "linux")]
-                            let root_path = "/";
+                            let root_path = "/".to_string();
 
                             match env::set_current_dir(root_path) {
                                 Ok(_) => {
