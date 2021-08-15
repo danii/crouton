@@ -1,6 +1,6 @@
 use crouton::crouton::Crouton;
-
 use shadow_rs::shadow;
+
 shadow!(build);
 
 fn main() {

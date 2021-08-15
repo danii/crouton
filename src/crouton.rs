@@ -99,7 +99,7 @@ impl Crouton {
 
     fn print_header(&self) {
         print!(
-            "[Working Dir: {dir}] [Status: {status}]{time}{branch}\n❯ ", //"[Working Dir: {}] [Status: {}] {}\n~> ",
+            "[Working Dir: {dir}] [Status: {status}]{time}{branch}\n~> ", //"[Working Dir: {}] [Status: {}] {}\n~> ",
             dir = self
                 .current_dir
                 .to_str()
