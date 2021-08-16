@@ -22,6 +22,13 @@ pub struct Crouton {
     pub cmd_history: Vec<String>,
     pub custom_cmds: Vec<CCommand>,
     pub user_dir: UserDirs,
+
+    /* Config related fields */
+    pub good_color: Color,
+    pub bad_color: Color,
+    pub branch_color: Color,
+    pub branch_status_color: Color,
+    pub path_color: Color,
 }
 
 impl Crouton {
@@ -37,6 +44,11 @@ impl Crouton {
             user_dir: UserDirs::new().unwrap(),
             currnent_time: SystemTime::now(),
             cmd_history: vec![],
+            good_color: Color::MediumOrchid3,
+            bad_color: Color::Red3a,
+            branch_color: Color::Orange3,
+            path_color: Color::Aquamarine3,
+            branch_status_color: Color::Cyan3,
             custom_cmds: vec![CCommand::new("cd", |a, b| match b {
                 Some(b) => match b.get(1) {
                     Some(dir) => match env::set_current_dir(dir) {
@@ -119,19 +131,14 @@ impl Crouton {
         }
         .stdout
         .lines()
-        .for_each(|s| {
-            match s {
-                Ok(s) => {
-                    // if s.starts_with("# branch.ab ") {
-                    //     status.push(s)
-                    // } else
-                    if !s.starts_with('#') {
-                        status.add(&s)
-                    }
+        .for_each(|s| match s {
+            Ok(s) => {
+                if !s.starts_with('#') {
+                    status.add(&s)
                 }
-                Err(err) => {
-                    println!("{}", err)
-                }
+            }
+            Err(err) => {
+                println!("{}", err)
             }
         });
 
@@ -142,7 +149,7 @@ impl Crouton {
         match &self.current_head_branch {
             Some(branch) => format!(
                 " [Branch: {branch}{status}] ",
-                branch = branch.to_string().color(Color::MediumPurple3a).bold(),
+                branch = branch.to_string().color(self.branch_color).bold(),
                 status = match self.get_repo_status() {
                     Some(statuses) => {
                         let mut ret = String::from("");
@@ -163,7 +170,7 @@ impl Crouton {
                             ret.push('>')
                         }
 
-                        format!("{}", ret.color(Color::Red3b).bold())
+                        format!("{}", ret.color(self.branch_status_color).bold())
                     }
                     None => String::from(""),
                 }
@@ -207,7 +214,7 @@ impl Crouton {
                 .current_dir
                 .to_str()
                 .unwrap_or("\"Failed to get dir\"")
-                .color(Color::MediumOrchid3)
+                .color(self.path_color)
                 .bold(),
             status = self.determine_status(self.status),
             branch = self.display_branch(),
@@ -219,8 +226,8 @@ impl Crouton {
 
     fn determine_status(&self, status: bool) -> colorful::core::color_string::CString {
         match status {
-            true => "Good".color(Color::MediumSpringGreen).bold(),
-            false => "Bad".color(Color::MediumVioletRed).bold(),
+            true => "Good".color(self.good_color).bold(),
+            false => "Bad".color(self.bad_color).bold(),
         }
     }
 
@@ -279,7 +286,6 @@ impl Crouton {
                 }
             }
 
-            println!("\n");
             self.print_header()
         }
     }
