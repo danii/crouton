@@ -76,7 +76,7 @@ fn main() {
             ];
 
             for color in colors {
-                println!("I am {}", color.color(colors::color_from_str(color)))
+                println!("I am {}", color.color(colors!(color;Orange4a)))
             }
         }
 
