@@ -1,5 +1,5 @@
 //use std::{env, fs:: {read_dir}, io::{self, Read, Write}, path::{Path, PathBuf}, process::Command, time::{Duration, SystemTime}};
-use super::git::statuses;
+use super::{command::Command as CCommand, git::statuses};
 use colorful::{Color, Colorful};
 use git2::Repository;
 use shell_words;
@@ -7,7 +7,7 @@ use std::{
     env,
     io::{self, BufRead, Write},
     path::PathBuf,
-    process::Command,
+    process::{exit, Command},
     time::{Duration, SystemTime},
 };
 
@@ -19,6 +19,7 @@ pub struct Crouton {
     pub current_head_branch: Option<String>,
     pub currnent_time: SystemTime,
     pub cmd_history: Vec<String>,
+    pub custom_cmds: Vec<CCommand>,
 }
 
 impl Crouton {
@@ -33,6 +34,52 @@ impl Crouton {
             current_head_branch: None,
             currnent_time: SystemTime::now(),
             cmd_history: vec![],
+            custom_cmds: vec![CCommand::new("cd", |a, b| match b {
+                Some(b) => match b.get(1) {
+                    Some(dir) => match env::set_current_dir(dir) {
+                        Ok(_) => {
+                            a.currnent_time = SystemTime::now();
+                            a.current_dir = env::current_dir().unwrap();
+                            a.current_repo = a.get_current_repo();
+                            a.current_head_branch = a.get_current_branch();
+
+                            a.status = true;
+                            a.cmd_history.push("cd".to_string());
+                        }
+                        Err(_) => {
+                            a.status = false;
+                        }
+                    },
+                    None => {
+                        #[cfg(target_os = "windows")]
+                        let root_path = match std::env::var("SystemDrive") {
+                            Ok(env_path) => env_path,
+                            Err(_) => "C:\\".to_string(),
+                        };
+
+                        #[cfg(target_os = "linux")]
+                        let root_path = "/".to_string();
+
+                        match env::set_current_dir(root_path) {
+                            Ok(_) => {
+                                a.currnent_time = SystemTime::now();
+                                a.current_dir = env::current_dir().unwrap();
+                                a.current_repo = a.get_current_repo();
+                                a.current_head_branch = a.get_current_branch();
+
+                                a.status = true;
+                                a.cmd_history.push("cd".to_string());
+                            }
+                            Err(_) => {
+                                a.status = false;
+                            }
+                        }
+                    }
+                },
+                None => {
+                    a.status = false;
+                }
+            })],
         }
     }
 
@@ -210,7 +257,9 @@ impl Crouton {
 
     pub fn handle_command(&mut self, command: &str, split_command: Vec<String>) {
         match command {
-            // "exit" => {}
+            "exit" => {
+                exit(0x0100);
+            }
             "crouton_history" => match split_command.get(1) {
                 Some(sub_cmd) => match sub_cmd.to_lowercase().as_str() {
                     "use" => {
@@ -247,68 +296,37 @@ impl Crouton {
                     self.status = true;
                 }
             },
-            "cd" => match split_command.get(1) {
-                // Handling the CD command our selves in needed so that I can
-                // set the branch if the directory is a git repo. I can't
-                // think of any other way to do it :(
-                Some(dir) => match env::set_current_dir(dir) {
-                    Ok(_) => {
-                        self.currnent_time = SystemTime::now();
-                        self.current_dir = env::current_dir().unwrap();
-                        self.current_repo = self.get_current_repo();
-                        self.current_head_branch = self.get_current_branch();
+            _ => {
+                let commands = &self
+                    .custom_cmds
+                    .iter()
+                    .filter(|c| c.name == command.to_lowercase().as_str())
+                    .collect::<Vec<&CCommand>>();
 
-                        self.status = true;
-                        self.cmd_history.push("cd".to_string());
+                match commands.get(0) {
+                    Some(cmd) => {
+                        (cmd.func)(self, Some((&split_command[0..]).to_vec()));
                     }
-                    Err(_) => {
-                        self.status = false;
-                    }
-                },
-                None => {
-                    #[cfg(target_os = "windows")]
-                    let root_path = match std::env::var("SystemDrive") {
-                        Ok(env_path) => env_path,
-                        Err(_) => "C:\\".to_string(),
-                    };
-
-                    #[cfg(target_os = "linux")]
-                    let root_path = "/".to_string();
-
-                    match env::set_current_dir(root_path) {
-                        Ok(_) => {
+                    None => match Command::new(command).args(&split_command[1..]).spawn() {
+                        Ok(mut output) => {
                             self.currnent_time = SystemTime::now();
+                            output.wait().unwrap();
+
                             self.current_dir = env::current_dir().unwrap();
                             self.current_repo = self.get_current_repo();
                             self.current_head_branch = self.get_current_branch();
 
+                            self.cmd_history.push(command.to_string());
                             self.status = true;
-                            self.cmd_history.push("cd".to_string());
                         }
-                        Err(_) => {
+                        Err(err) => {
+                            println!("{err:?}", err = err);
+                            self.cmd_history.push(command.to_string());
                             self.status = false;
                         }
-                    }
+                    },
                 }
-            },
-            _ => match Command::new(command).args(&split_command[1..]).spawn() {
-                Ok(mut output) => {
-                    self.currnent_time = SystemTime::now();
-                    output.wait().unwrap();
-
-                    self.current_dir = env::current_dir().unwrap();
-                    self.current_repo = self.get_current_repo();
-                    self.current_head_branch = self.get_current_branch();
-
-                    self.cmd_history.push(command.to_string());
-                    self.status = true;
-                }
-                Err(err) => {
-                    println!("{err:?}", err = err);
-                    self.cmd_history.push(command.to_string());
-                    self.status = false;
-                }
-            },
+            }
         }
     }
 }
