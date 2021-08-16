@@ -87,7 +87,7 @@ impl Crouton {
                 branch = branch.to_string().color(Color::MediumPurple3a).bold(),
                 status = match self.get_repo_status() {
                     Some(statuses) => {
-                        let mut ret = String::from("");
+                        let mut ret = String::from(" ");
                         
                         if statuses.modified != 0 {
                             ret.push('!');
@@ -105,7 +105,7 @@ impl Crouton {
                             ret.push('>')
                         }
 
-                        format!(" [{}]",ret.color(Color::Red3b).bold())
+                        format!("{}",ret.color(Color::Red3b).bold())
                     }
                     None => String::from("")
                 }
