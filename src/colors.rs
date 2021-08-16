@@ -1,5 +1,15 @@
 use colorful;
 
+#[macro_export]
+macro_rules! colors {
+    ($color:ident; $($str:ident),*) => {
+      match $color {
+        $(stringify!($str) => colorful::Color::$str)*,
+        _ => colorful::Color::White
+       }
+    }
+}
+
 pub fn color_from_str(color: &'static str) -> colorful::Color {
     match color {
         "Purple3" => colorful::Color::Purple3,
