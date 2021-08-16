@@ -1,8 +1,15 @@
 //use std::{env, fs:: {read_dir}, io::{self, Read, Write}, path::{Path, PathBuf}, process::Command, time::{Duration, SystemTime}};
+use super::git::statuses;
 use colorful::{Color, Colorful};
 use git2::Repository;
-use super::git::statuses;
-use std::{env, io::{self, BufRead, Write}, path::PathBuf, process::Command, time::{Duration, SystemTime}};
+use shell_words;
+use std::{
+    env,
+    io::{self, BufRead, Write},
+    path::PathBuf,
+    process::Command,
+    time::{Duration, SystemTime},
+};
 
 pub struct Crouton {
     pub header_string: &'static str,
@@ -55,25 +62,37 @@ impl Crouton {
     }
 
     fn get_repo_status(&self) -> Option<statuses::RepoStatus> {
-        
         let mut status = statuses::RepoStatus::default();
 
-        match Command::new(
-            "git"
-        ).args(&["-C", self.current_dir.to_str().unwrap(), "--no-optional-locks", "status", "--porcelain=2","--branch"]).output() {
+        match Command::new("git")
+            .args(&[
+                "-C",
+                self.current_dir.to_str().unwrap(),
+                "--no-optional-locks",
+                "status",
+                "--porcelain=2",
+                "--branch",
+            ])
+            .output()
+        {
             Ok(status) => status,
             Err(err) => panic!("{}", err),
-        }.stdout.lines().for_each(|s| {
+        }
+        .stdout
+        .lines()
+        .for_each(|s| {
             match s {
                 Ok(s) => {
                     // if s.starts_with("# branch.ab ") {
                     //     status.push(s)
-                    // } else 
-                    if !s.starts_with("#") {
+                    // } else
+                    if !s.starts_with('#') {
                         status.add(&s)
                     }
-                },
-                Err(err) => {println!("{}", err)},
+                }
+                Err(err) => {
+                    println!("{}", err)
+                }
             }
         });
 
@@ -88,10 +107,10 @@ impl Crouton {
                 status = match self.get_repo_status() {
                     Some(statuses) => {
                         let mut ret = String::from(" ");
-                        
+
                         if statuses.modified != 0 {
                             ret.push('!');
-                        } 
+                        }
 
                         if statuses.deleted != 0 {
                             ret.push('-');
@@ -105,9 +124,9 @@ impl Crouton {
                             ret.push('>')
                         }
 
-                        format!("{}",ret.color(Color::Red3b).bold())
+                        format!("{}", ret.color(Color::Red3b).bold())
                     }
-                    None => String::from("")
+                    None => String::from(""),
                 }
             ),
             None => String::from(""),
@@ -175,19 +194,20 @@ impl Crouton {
             let mut command_data = String::new();
             io::stdin().read_line(&mut command_data).unwrap();
 
-            let split_command = command_data.split(' ').collect::<Vec<&str>>();
+            let split_command = shell_words::split(&command_data).unwrap();
+            //command_data.split(' ').collect::<Vec<&str>>();
 
-            #[cfg(target_os = "windows")]
-            let split_command = split_command
-                .iter()
-                .map(|e| e.strip_suffix("\r\n").unwrap_or(e))
-                .collect::<Vec<&str>>();
+            // #[cfg(target_os = "windows")]
+            // let split_command = split_command
+            //     .iter()
+            //     .map(|e| e.strip_suffix("\r\n").unwrap_or(e))
+            //     .collect::<Vec<&str>>();
 
-            #[cfg(target_os = "linux")]
-            let split_command = split_command
-                .iter()
-                .map(|e| e.strip_suffix('\n').unwrap_or(e))
-                .collect::<Vec<&str>>();
+            // #[cfg(target_os = "linux")]
+            // let split_command = split_command
+            //     .iter()
+            //     .map(|e| e.strip_suffix('\n').unwrap_or(e))
+            //     .collect::<Vec<&str>>();
 
             match split_command.get(0) {
                 Some(command) => match command.to_lowercase().as_str() {
