@@ -1,6 +1,7 @@
 //use std::{env, fs:: {read_dir}, io::{self, Read, Write}, path::{Path, PathBuf}, process::Command, time::{Duration, SystemTime}};
 use colorful::{Color, Colorful};
 use git2::Repository;
+use super::git::statuses;
 use std::{env, io::{self, BufRead, Write}, path::PathBuf, process::Command, time::{Duration, SystemTime}};
 
 pub struct Crouton {
@@ -53,9 +54,9 @@ impl Crouton {
         }
     }
 
-    fn get_repo_status(&self) -> Option<Vec<String>> {
+    fn get_repo_status(&self) -> Option<statuses::RepoStatus> {
         
-        let mut status:Vec<String> = vec![];
+        let mut status = statuses::RepoStatus::default();
 
         match Command::new(
             "git"
@@ -65,13 +66,14 @@ impl Crouton {
         }.stdout.lines().for_each(|s| {
             match s {
                 Ok(s) => {
-                    if s.starts_with("# branch.ab ") {
-                        status.push(s)
-                    } else if !s.starts_with("#") {
-                        status.push(s)
+                    // if s.starts_with("# branch.ab ") {
+                    //     status.push(s)
+                    // } else 
+                    if !s.starts_with("#") {
+                        status.add(&s)
                     }
                 },
-                Err(_) => {status.push(String::from("None?"))},
+                Err(err) => {println!("{}", err)},
             }
         });
 
@@ -81,18 +83,32 @@ impl Crouton {
     fn display_branch(&self) -> String {
         match &self.current_head_branch {
             Some(branch) => format!(
-                " [Branch: {branch}{status:?}] ",
+                " [Branch: {branch}{status}] ",
                 branch = branch.to_string().color(Color::MediumPurple3a).bold(),
-                status = self.get_repo_status()//match &self.current_repo {
-                //     Some(repo) => {
-                //         match repo.state() {
-                //             RepositoryState::Merge => " (Merge)".color(Color::MediumVioletRed).bold().to_string(),
-                //             RepositoryState::CherryPick => " (+)".color(Color::MediumVioletRed).bold().to_string(),
-                //             _ => format!(" ({:?})", repo.state()).to_string()
-                //         }
-                //     }
-                //     None => String::from("")
-                // }
+                status = match self.get_repo_status() {
+                    Some(statuses) => {
+                        let mut ret = String::from("");
+                        
+                        if statuses.modified != 0 {
+                            ret.push('!');
+                        } 
+
+                        if statuses.deleted != 0 {
+                            ret.push('-');
+                        }
+
+                        if statuses.staged != 0 {
+                            ret.push('+');
+                        }
+
+                        if statuses.renamed != 0 {
+                            ret.push('>')
+                        }
+
+                        format!(" [{}]",ret.color(Color::Red3b).bold())
+                    }
+                    None => String::from("")
+                }
             ),
             None => String::from(""),
         }
