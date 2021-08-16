@@ -1,6 +1,7 @@
 //use std::{env, fs:: {read_dir}, io::{self, Read, Write}, path::{Path, PathBuf}, process::Command, time::{Duration, SystemTime}};
 use super::{command::Command as CCommand, git::statuses};
 use colorful::{Color, Colorful};
+use directories_next::UserDirs;
 use git2::Repository;
 use shell_words;
 use std::{
@@ -20,6 +21,7 @@ pub struct Crouton {
     pub currnent_time: SystemTime,
     pub cmd_history: Vec<String>,
     pub custom_cmds: Vec<CCommand>,
+    pub user_dir: UserDirs,
 }
 
 impl Crouton {
@@ -32,6 +34,7 @@ impl Crouton {
             status: true,
             current_repo: None,
             current_head_branch: None,
+            user_dir: UserDirs::new().unwrap(),
             currnent_time: SystemTime::now(),
             cmd_history: vec![],
             custom_cmds: vec![CCommand::new("cd", |a, b| match b {
@@ -50,31 +53,20 @@ impl Crouton {
                             a.status = false;
                         }
                     },
-                    None => {
-                        #[cfg(target_os = "windows")]
-                        let root_path = match std::env::var("SystemDrive") {
-                            Ok(env_path) => env_path,
-                            Err(_) => "C:\\".to_string(),
-                        };
+                    None => match env::set_current_dir(a.user_dir.home_dir()) {
+                        Ok(_) => {
+                            a.currnent_time = SystemTime::now();
+                            a.current_dir = env::current_dir().unwrap();
+                            a.current_repo = a.get_current_repo();
+                            a.current_head_branch = a.get_current_branch();
 
-                        #[cfg(target_os = "linux")]
-                        let root_path = "/".to_string();
-
-                        match env::set_current_dir(root_path) {
-                            Ok(_) => {
-                                a.currnent_time = SystemTime::now();
-                                a.current_dir = env::current_dir().unwrap();
-                                a.current_repo = a.get_current_repo();
-                                a.current_head_branch = a.get_current_branch();
-
-                                a.status = true;
-                                a.cmd_history.push("cd".to_string());
-                            }
-                            Err(_) => {
-                                a.status = false;
-                            }
+                            a.status = true;
+                            a.cmd_history.push("cd".to_string());
                         }
-                    }
+                        Err(_) => {
+                            a.status = false;
+                        }
+                    },
                 },
                 None => {
                     a.status = false;
