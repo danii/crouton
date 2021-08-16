@@ -202,7 +202,7 @@ impl Crouton {
 
     fn print_header(&self) {
         print!(
-            "[Working Dir: {dir}] [Status: {status}]{time}{branch}\n~> ", //"[Working Dir: {}] [Status: {}] {}\n~> ",
+            "[Working Dir: {dir}] [Status: {status}]{time}{branch}\n> ", //"[Working Dir: {}] [Status: {}] {}\n~> ",
             dir = self
                 .current_dir
                 .to_str()
@@ -236,39 +236,50 @@ impl Crouton {
             let and_and_split = command_data.split("&&").collect::<Vec<&str>>();
             if and_and_split.len() > 1 {
                 for section in and_and_split {
-                    if self.status != true {
-                        break
+                    if !self.status {
+                        break;
                     }
 
-                    let split_command = shell_words::split(&section).unwrap();
+                    let split_command = shell_words::split(section).unwrap();
 
                     match split_command.get(0) {
-                        Some(command) => {
-                            self.handle_command(command.to_lowercase().as_str(), split_command.clone())
-                        }
+                        Some(command) => self
+                            .handle_command(command.to_lowercase().as_str(), split_command.clone()),
                         None => {
                             self.status = false;
                         }
                     }
                 }
             } else {
-                let semi_colon = command_data.split(";").collect::<Vec<&str>>();
-                if  semi_colon.len() > 1 {
+                let semi_colon = command_data.split(';').collect::<Vec<&str>>();
+                if semi_colon.len() > 1 {
                     for section in semi_colon {
-                        let split_command = shell_words::split(&section).unwrap();
+                        let split_command = shell_words::split(section).unwrap();
 
                         match split_command.get(0) {
-                            Some(command) => {
-                                self.handle_command(command.to_lowercase().as_str(), split_command.clone())
-                            }
+                            Some(command) => self.handle_command(
+                                command.to_lowercase().as_str(),
+                                split_command.clone(),
+                            ),
                             None => {
                                 self.status = false;
                             }
                         }
                     }
+                } else {
+                    let split_command = shell_words::split(&command_data).unwrap();
+
+                    match split_command.get(0) {
+                        Some(command) => self
+                            .handle_command(command.to_lowercase().as_str(), split_command.clone()),
+                        None => {
+                            self.status = false;
+                        }
+                    }
                 }
             }
 
+            println!("\n");
             self.print_header()
         }
     }
